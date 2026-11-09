@@ -4,16 +4,22 @@
   "description": "Faculty Performance Intelligence System Backend API",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate --schema=prisma/schema.postgresql.prisma && tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
+    "prisma:generate": "prisma generate --schema=prisma/schema.postgresql.prisma",
+    "prisma:push": "prisma db push --schema=prisma/schema.postgresql.prisma",
     "prisma:seed": "ts-node prisma/seed.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.8.7",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.29.1",
     "cors": "^2.8.5",
@@ -22,20 +28,14 @@
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/multer": "^1.4.12",
-    "@types/node": "^22.8.7",
     "@types/supertest": "^6.0.2",
-    "prisma": "^5.22.0",
     "supertest": "^7.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
     "vitest": "^2.1.4"
   }
 }

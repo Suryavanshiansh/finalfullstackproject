@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../../services/api';
+import { api, getUploadUrl } from '../../services/api';
 import { Activity, ActivityCategory } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import {
@@ -372,7 +372,7 @@ export const ApprovalQueuePage: React.FC = () => {
                         </div>
                       </div>
                       <a
-                        href={`/uploads/${ev.fileName}`}
+                        href={getUploadUrl(ev.fileName)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition"

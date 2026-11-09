@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../../services/api';
+import { api, getUploadUrl } from '../../services/api';
 import { Activity } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -319,7 +319,7 @@ export const ActivityDetailPage: React.FC = () => {
 
                   <div className="flex items-center space-x-2">
                     <a
-                      href={`/uploads/${ev.fileName}`}
+                      href={getUploadUrl(ev.fileName)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition"

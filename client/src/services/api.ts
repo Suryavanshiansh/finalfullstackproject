@@ -1,4 +1,8 @@
-const API_BASE = '/api/v1';
+const RAW_API_URL = (import.meta.env.VITE_API_URL as string) || '';
+const API_HOST = RAW_API_URL.replace(/\/+$/, '');
+const API_BASE = `${API_HOST}/api/v1`;
+
+export const getUploadUrl = (fileName: string) => `${API_HOST}/uploads/${fileName}`;
 
 export class ApiError extends Error {
   code: string;

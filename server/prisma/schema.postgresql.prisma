@@ -1,0 +1,324 @@
+// PostgreSQL Compatible Schema for FPIS
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  hodId       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users   User[]
+  courses Course[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  employeeId   String   @unique
+  role         String
+  designation  String
+  departmentId String?
+  phone        String?
+  avatarUrl    String?
+  bio          String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department      Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  activities      Activity[]       @relation("FacultyActivities")
+  reviewedActions ApprovalRecord[] @relation("ReviewerRecords")
+  reviewedActs    Activity[]       @relation("ReviewerActivities")
+  availabilities  FacultyAvailability[]
+  expertises      FacultyExpertise[]
+  scheduleEntries ScheduleEntry[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+
+  @@index([role])
+  @@index([departmentId])
+}
+
+model AcademicSession {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activities       Activity[]
+  scoringPolicies  ScoringPolicy[]
+  workloadPolicies WorkloadPolicy[]
+  scheduleEntries  ScheduleEntry[]
+}
+
+model ActivityCategory {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  name               String
+  description        String
+  unitLabel          String
+  defaultWeight      Float    @default(0.15)
+  defaultUpperLimit  Float    @default(100.0)
+  icon               String   @default("award")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  activities   Activity[]
+  policyItems  ScoringPolicyItem[]
+}
+
+model ScoringPolicy {
+  id                String   @id @default(cuid())
+  academicSessionId String
+  name              String
+  version           String   @default("1.0")
+  isActive          Boolean  @default(true)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  academicSession AcademicSession     @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
+  items           ScoringPolicyItem[]
+
+  @@index([academicSessionId])
+}
+
+model ScoringPolicyItem {
+  id           String   @id @default(cuid())
+  policyId     String
+  categoryId   String
+  weight       Float
+  upperLimit   Float
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  policy   ScoringPolicy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  category ActivityCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, categoryId])
+}
+
+model WorkloadPolicy {
+  id                      String   @id @default(cuid())
+  academicSessionId       String
+  maxTeachingHoursPerWeek Float    @default(16.0)
+  minTeachingHoursPerWeek Float    @default(8.0)
+  maxCommitteeCount       Int      @default(3)
+  maxMentoringStudents    Int      @default(25)
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id                String   @id @default(cuid())
+  facultyId         String
+  categoryId        String
+  academicSessionId String
+  title             String
+  description       String
+  date              DateTime
+  endDate           DateTime?
+  quantitativeValue Float
+  status            String   @default("DRAFT")
+  approvedValue     Float?
+  reviewerFeedback  String?
+  correctionNotes   String?
+  submissionDate    DateTime?
+  reviewedDate      DateTime?
+  reviewerId        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  faculty         User                @relation("FacultyActivities", fields: [facultyId], references: [id], onDelete: Cascade)
+  reviewer        User?               @relation("ReviewerActivities", fields: [reviewerId], references: [id], onDelete: SetNull)
+  category        ActivityCategory    @relation(fields: [categoryId], references: [id])
+  academicSession AcademicSession     @relation(fields: [academicSessionId], references: [id])
+  evidence        EvidenceAttachment[]
+  approvalRecords ApprovalRecord[]
+
+  @@index([facultyId])
+  @@index([status])
+  @@index([categoryId])
+  @@index([academicSessionId])
+}
+
+model EvidenceAttachment {
+  id           String   @id @default(cuid())
+  activityId   String
+  fileName     String
+  originalName String
+  mimeType     String
+  fileSize     Int
+  filePath     String
+  uploadedAt   DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+model ApprovalRecord {
+  id             String   @id @default(cuid())
+  activityId     String
+  reviewerId     String
+  action         String
+  previousStatus String
+  newStatus      String
+  comment        String?
+  timestamp      DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  reviewer User     @relation("ReviewerRecords", fields: [reviewerId], references: [id])
+
+  @@index([activityId])
+  @@index([reviewerId])
+}
+
+model FacultyAvailability {
+  id            String   @id @default(cuid())
+  facultyId     String
+  dayOfWeek     String
+  preferredSlot String
+  maxDailyHours Float    @default(6.0)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  faculty User @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+  @@unique([facultyId, dayOfWeek])
+}
+
+model Course {
+  id                  String   @id @default(cuid())
+  code                String   @unique
+  name                String
+  departmentId        String
+  credits             Int      @default(3)
+  semester            Int      @default(1)
+  lectureHoursPerWeek Int      @default(3)
+  labHoursPerWeek     Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  department Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  expertises FacultyExpertise[]
+  schedules  ScheduleEntry[]
+
+  @@index([departmentId])
+}
+
+model FacultyExpertise {
+  id               String   @id @default(cuid())
+  facultyId        String
+  courseId         String
+  proficiencyLevel String   @default("PRIMARY")
+  createdAt        DateTime @default(now())
+
+  faculty User   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([facultyId, courseId])
+}
+
+model Classroom {
+  id          String   @id @default(cuid())
+  roomNumber  String   @unique
+  building    String
+  capacity    Int      @default(60)
+  type        String   @default("LECTURE_HALL")
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  schedules ScheduleEntry[]
+}
+
+model TimeSlot {
+  id           String @id @default(cuid())
+  dayOfWeek    String
+  startTime    String
+  endTime      String
+  label        String
+  periodNumber Int
+
+  schedules ScheduleEntry[]
+
+  @@unique([dayOfWeek, periodNumber])
+}
+
+model ScheduleEntry {
+  id                String   @id @default(cuid())
+  academicSessionId String
+  courseId          String
+  facultyId         String
+  classroomId       String
+  timeSlotId        String
+  dayOfWeek         String
+  isPublished       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
+  course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  faculty         User            @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  classroom       Classroom       @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  timeSlot        TimeSlot        @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+
+  @@index([academicSessionId])
+  @@index([facultyId])
+  @@index([classroomId])
+  @@index([timeSlotId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType])
+}
